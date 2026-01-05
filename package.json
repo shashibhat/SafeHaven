@@ -1,0 +1,30 @@
+{
+  "name": "security-system",
+  "version": "1.0.0",
+  "description": "Offline-first home security system with edge AI inference",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "workers/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker-compose up -d && npm run dev:all",
+    "dev:all": "concurrently \"npm run dev:api\" \"npm run dev:ui\" \"npm run dev:workers\"",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:ui": "npm run dev --workspace=apps/web",
+    "dev:workers": "concurrently \"npm run dev --workspace=workers/ingest\" \"npm run dev --workspace=workers/inference\" \"npm run dev --workspace=workers/rules-engine\" \"npm run dev --workspace=workers/actions-service\"",
+    "dev:local": "npm run dev:all",
+    "build": "npm run build --workspaces",
+    "start": "docker-compose up",
+    "stop": "docker-compose down",
+    "db:migrate": "npm run migrate --workspace=apps/api",
+    "db:seed": "npm run seed --workspace=apps/api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

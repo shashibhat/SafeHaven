@@ -1,0 +1,26 @@
+{
+  "name": "@security-system/actions-service",
+  "version": "1.0.0",
+  "description": "Actions service for executing security system actions like sirens, lights, notifications",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@security-system/shared": "workspace:*",
+    "mqtt": "^5.3.4",
+    "sqlite3": "^5.1.6",
+    "node-fetch": "^3.3.2",
+    "node-notifier": "^10.0.1",
+    "gpio": "^0.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/node-notifier": "^8.0.5",
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2"
+  }
+}

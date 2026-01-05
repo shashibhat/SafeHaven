@@ -1,0 +1,194 @@
+version: '3.8'
+
+services:
+  # MQTT Broker
+  mqtt:
+    image: eclipse-mosquitto:2.0.18
+    container_name: security-mqtt
+    ports:
+      - "1883:1883"     # MQTT port
+      - "9001:9001"     # WebSocket port for frontend
+    volumes:
+      - ./docker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt_data:/mosquitto/data
+      - mqtt_logs:/mosquitto/log
+    networks:
+      - security-network
+    restart: unless-stopped
+
+  # Web API Service
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: security-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this}
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - DATABASE_URL=/app/data/security.db
+      - UPLOAD_DIR=/app/uploads
+      - MODELS_DIR=/app/models
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+    depends_on:
+      - mqtt
+    networks:
+      - security-network
+    restart: unless-stopped
+
+  # Camera Ingest Worker
+  ingest:
+    build:
+      context: .
+      dockerfile: workers/ingest/Dockerfile
+    container_name: security-ingest
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - FRAME_QUEUE_DIR=/app/frames
+      - MAX_CONCURRENT_STREAMS=4
+      - STREAM_RETRY_ATTEMPTS=3
+      - HEALTH_CHECK_INTERVAL=30000
+    volumes:
+      - ./frames:/app/frames
+      - ./data:/app/data
+    devices:
+      - /dev/video0:/dev/video0  # USB camera support (optional)
+    depends_on:
+      - mqtt
+      - api
+    networks:
+      - security-network
+    restart: unless-stopped
+
+  # Inference Worker
+  inference:
+    build:
+      context: .
+      dockerfile: workers/inference/Dockerfile
+    container_name: security-inference
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MODELS_DIR=/app/models
+      - INFERENCE_BATCH_SIZE=1
+      - CONFIDENCE_THRESHOLD=0.5
+      - NMS_THRESHOLD=0.4
+      - EMBEDDING_MODEL_PATH=/app/models/mobilenet_v2.onnx
+      - CUSTOM_MODELS_DIR=/app/models/custom
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+    depends_on:
+      - mqtt
+      - api
+    networks:
+      - security-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Rules Engine
+  rules-engine:
+    build:
+      context: .
+      dockerfile: workers/rules-engine/Dockerfile
+    container_name: security-rules-engine
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - RULES_CACHE_TTL=300000
+      - MAX_CONCURRENT_RULES=10
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mqtt
+      - api
+    networks:
+      - security-network
+    restart: unless-stopped
+
+  # Actions Service
+  actions:
+    build:
+      context: .
+      dockerfile: workers/actions-service/Dockerfile
+    container_name: security-actions
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - GPIO_ENABLED=${GPIO_ENABLED:-false}
+      - WEBHOOK_TIMEOUT=5000
+      - RECORDING_DURATION=30
+      - CLIPS_DIR=/app/clips
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+    volumes:
+      - ./clips:/app/clips
+      - ./data:/app/data
+    devices:
+      - /dev/gpiochip0:/dev/gpiochip0  # GPIO access (optional)
+    depends_on:
+      - mqtt
+      - api
+    networks:
+      - security-network
+    restart: unless-stopped
+    privileged: true  # Required for GPIO access
+
+  # Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: security-web
+    ports:
+      - "8080:80"
+    environment:
+      - API_URL=http://api:3000
+      - MQTT_BROKER_URL=ws://mqtt:9001
+    depends_on:
+      - api
+      - mqtt
+    networks:
+      - security-network
+    restart: unless-stopped
+
+  # Redis for caching (optional, for future use)
+  redis:
+    image: redis:7-alpine
+    container_name: security-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - security-network
+    restart: unless-stopped
+    profiles:
+      - with-redis
+
+volumes:
+  mqtt_data:
+  mqtt_logs:
+  redis_data:
+
+networks:
+  security-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
