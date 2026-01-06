@@ -4,7 +4,7 @@ import { useSystemStore } from '../stores/system';
 import {
   CogIcon,
   UserIcon,
-  ShieldIcon,
+  ShieldCheckIcon,
   BellIcon,
   VideoCameraIcon,
   CpuChipIcon,
@@ -140,7 +140,7 @@ export const Settings: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: CogIcon },
-    { id: 'security', label: 'Security', icon: ShieldIcon },
+    { id: 'security', label: 'Security', icon: ShieldCheckIcon },
     { id: 'notifications', label: 'Notifications', icon: BellIcon },
     { id: 'cameras', label: 'Cameras', icon: VideoCameraIcon },
     { id: 'ai', label: 'AI & Detection', icon: CpuChipIcon },
@@ -858,3 +858,5 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
+
+export default Settings;

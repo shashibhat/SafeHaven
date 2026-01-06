@@ -154,19 +154,24 @@ class CameraStream {
     console.log(`Starting FFmpeg for camera ${this.camera.id}:`, ffmpegArgs.join(' '));
 
     this.ffmpeg = spawn('ffmpeg', ffmpegArgs);
+    const ff = this.ffmpeg!;
     
-    this.ffmpeg.stdout.on('data', (data) => {
-      this.processFrame(data);
-    });
+    if (ff.stdout) {
+      ff.stdout.on('data', (data) => {
+        this.processFrame(data as Buffer);
+      });
+    }
 
-    this.ffmpeg.stderr.on('data', (data) => {
-      const message = data.toString();
-      if (message.includes('error') || message.includes('Error')) {
-        console.error(`FFmpeg error for camera ${this.camera.id}:`, message);
-      }
-    });
+    if (ff.stderr) {
+      ff.stderr.on('data', (data) => {
+        const message = data.toString();
+        if (message.includes('error') || message.includes('Error')) {
+          console.error(`FFmpeg error for camera ${this.camera.id}:`, message);
+        }
+      });
+    }
 
-    this.ffmpeg.on('close', (code) => {
+    ff.on('close', (code) => {
       console.log(`FFmpeg process for camera ${this.camera.id} exited with code ${code}`);
       this.ffmpeg = null;
       
@@ -179,7 +184,7 @@ class CameraStream {
       }
     });
 
-    this.ffmpeg.on('error', (error) => {
+    ff.on('error', (error) => {
       console.error(`FFmpeg process error for camera ${this.camera.id}:`, error);
       this.updateHealthStatus('unhealthy', error.message);
     });

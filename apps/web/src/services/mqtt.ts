@@ -1,6 +1,6 @@
-import { MqttClient, connect } from 'mqtt';
+import mqtt, { MqttClient } from 'mqtt';
 import { EventEmitter } from 'events';
-import { Camera, Event, Incident, Rule, CustomModel } from '@security-system/shared';
+import { Event, Incident } from '@security-system/shared';
 
 export interface MQTTMessage {
   topic: string;
@@ -16,7 +16,7 @@ export class MQTTService extends EventEmitter {
   private reconnectDelay = 1000;
 
   constructor(
-    private brokerUrl: string = 'ws://localhost:9001',
+    private brokerUrl: string = 'ws://localhost:9011',
     private clientId: string = `web-client-${Date.now()}`
   ) {
     super();
@@ -25,7 +25,7 @@ export class MQTTService extends EventEmitter {
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.client = connect(this.brokerUrl, {
+        this.client = mqtt.connect(this.brokerUrl, {
           clientId: this.clientId,
           clean: true,
           connectTimeout: 4000,

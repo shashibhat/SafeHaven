@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@security-system/shared": "workspace:*",
+    "@security-system/shared": "file:../../packages/shared",
     "mqtt": "^5.3.4",
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.1",

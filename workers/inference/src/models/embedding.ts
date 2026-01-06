@@ -1,6 +1,6 @@
 import { InferenceSession, Tensor } from 'onnxruntime-node';
 import * as path from 'path';
-import { createCanvas, Image } from 'canvas';
+import sharp from 'sharp';
 
 export interface EmbeddingResult {
   embedding: number[];
@@ -24,6 +24,10 @@ export class EmbeddingModel {
       console.error('Failed to load embedding model:', error);
       throw error;
     }
+  }
+
+  isInitialized(): boolean {
+    return !!this.session;
   }
 
   async extractEmbedding(imageData: Buffer | Uint8Array): Promise<number[]> {
@@ -56,58 +60,32 @@ export class EmbeddingModel {
   }
 
   private async preprocessImage(
-    imageData: Buffer | Uint8Array, 
-    width: number, 
+    imageData: Buffer | Uint8Array,
+    width: number,
     height: number
   ): Promise<Tensor> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      
-      img.onload = () => {
-        try {
-          const canvas = createCanvas(width, height);
-          const ctx = canvas.getContext('2d');
-          
-          // Draw and resize image
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Get image data
-          const imageData = ctx.getImageData(0, 0, width, height);
-          const data = imageData.data;
-          
-          // Convert to RGB and normalize (MobileNet preprocessing)
-          const rgbData = new Float32Array(3 * width * height);
-          const mean = [0.485, 0.456, 0.406];
-          const std = [0.229, 0.224, 0.225];
-          
-          for (let i = 0; i < width * height; i++) {
-            const r = data[i * 4] / 255.0;
-            const g = data[i * 4 + 1] / 255.0;
-            const b = data[i * 4 + 2] / 255.0;
-            
-            // Normalize with ImageNet stats
-            rgbData[i] = (r - mean[0]) / std[0];                    // R
-            rgbData[i + width * height] = (g - mean[1]) / std[1];   // G
-            rgbData[i + 2 * width * height] = (b - mean[2]) / std[2]; // B
-          }
-          
-          // Create tensor [1, 3, height, width] (NCHW format)
-          const tensor = new Tensor('float32', rgbData, [1, 3, height, width]);
-          resolve(tensor);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      img.onerror = (error) => reject(error);
-      
-      // Set image source
-      if (imageData instanceof Buffer) {
-        img.src = imageData;
-      } else {
-        img.src = Buffer.from(imageData);
-      }
-    });
+    const inputBuffer = imageData instanceof Buffer ? imageData : Buffer.from(imageData);
+    const { data, info } = await sharp(inputBuffer)
+      .resize(width, height, { fit: 'fill' })
+      .toColourspace('rgb')
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const rgbData = new Float32Array(3 * width * height);
+    const mean = [0.485, 0.456, 0.406];
+    const std = [0.229, 0.224, 0.225];
+
+    for (let i = 0; i < width * height; i++) {
+      const r = data[i * 3] / 255.0;
+      const g = data[i * 3 + 1] / 255.0;
+      const b = data[i * 3 + 2] / 255.0;
+
+      rgbData[i] = (r - mean[0]) / std[0];
+      rgbData[i + width * height] = (g - mean[1]) / std[1];
+      rgbData[i + 2 * width * height] = (b - mean[2]) / std[2];
+    }
+
+    return new Tensor('float32', rgbData, [1, 3, height, width]);
   }
 
   private normalizeEmbedding(embedding: number[]): number[] {

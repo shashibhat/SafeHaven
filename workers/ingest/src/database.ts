@@ -50,7 +50,12 @@ let dbInstance: Database | null = null;
 
 export const getDatabase = (): Database => {
   if (!dbInstance) {
-    const dbPath = process.env.DATABASE_PATH || './data/security.db';
+    const path = require('path');
+    const defaultPath = path.resolve(__dirname, '../../../data/security.db');
+    const dbPath = process.env.DATABASE_PATH || defaultPath;
+    try {
+      require('fs').mkdirSync(path.dirname(dbPath), { recursive: true });
+    } catch {}
     dbInstance = new Database(dbPath);
   }
   return dbInstance;

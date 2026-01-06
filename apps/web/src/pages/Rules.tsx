@@ -467,3 +467,5 @@ export const Rules: React.FC = () => {
     </div>
   );
 };
+
+export default Rules;

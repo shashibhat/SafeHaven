@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware'
 
 interface User {
   id: string
-  username: string
   email: string
   role: 'admin' | 'user'
 }
@@ -12,7 +11,7 @@ interface AuthState {
   user: User | null
   token: string | null
   loading: boolean
-  login: (username: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
 }
@@ -24,14 +23,14 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       loading: true,
 
-      login: async (username: string, password: string) => {
+      login: async (email: string, password: string) => {
         try {
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ email, password }),
           })
 
           if (!response.ok) {
@@ -82,8 +81,8 @@ export const useAuthStore = create<AuthState>()(
           if (!response.ok) {
             set({ user: null, token: null })
           } else {
-            const user = await response.json()
-            set({ user })
+          const data = await response.json()
+          set({ user: data.user })
           }
         } catch (error) {
           console.error('Auth check error:', error)

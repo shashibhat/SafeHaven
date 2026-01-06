@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@security-system/shared": "workspace:*",
+    "@security-system/shared": "file:../../packages/shared",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1",
@@ -18,7 +18,8 @@
     "lucide-react": "^0.395.0",
     "recharts": "^2.12.7",
     "date-fns": "^3.6.0",
-    "mqtt": "^5.3.4"
+    "mqtt": "^5.3.4",
+    "@heroicons/react": "^2.0.18"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

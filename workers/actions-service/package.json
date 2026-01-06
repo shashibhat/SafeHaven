@@ -10,12 +10,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@security-system/shared": "workspace:*",
+    "@security-system/shared": "file:../../packages/shared",
     "mqtt": "^5.3.4",
     "sqlite3": "^5.1.6",
     "node-fetch": "^3.3.2",
-    "node-notifier": "^10.0.1",
-    "gpio": "^0.3.3"
+    "node-notifier": "^10.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

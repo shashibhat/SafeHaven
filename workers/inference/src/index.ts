@@ -1,10 +1,11 @@
-import { Database } from './database';
-import { MQTTPublisher, MQTTSubscriber } from '@security-system/shared/mqtt';
-import { Detector } from './models/detector';
+import { Database, getDatabase } from './database';
+import { MQTTPublisher, MQTTSubscriber } from '@security-system/shared';
+import { ObjectDetector } from './models/detector';
 import { EmbeddingModel } from './models/embedding';
 import { KNNClassifier } from './models/knn-classifier';
 import { InferenceProcessor } from './processor';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Configuration
 const CONFIG = {
@@ -32,7 +33,7 @@ class InferenceWorker {
   private database: Database;
   private publisher: MQTTPublisher;
   private subscriber: MQTTSubscriber;
-  private detector: Detector;
+  private detector: ObjectDetector;
   private embeddingModel: EmbeddingModel;
   private knnClassifier: KNNClassifier;
   private processor: InferenceProcessor;
@@ -41,14 +42,16 @@ class InferenceWorker {
   private processingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.database = new Database(CONFIG.database.path);
+    this.database = getDatabase();
     this.publisher = new MQTTPublisher(CONFIG.mqtt);
     this.subscriber = new MQTTSubscriber(CONFIG.mqtt);
-    this.detector = new Detector(
+    this.detector = new ObjectDetector(
       CONFIG.models.detector,
-      CONFIG.inference.confidenceThreshold,
-      CONFIG.inference.nmsThreshold,
-      CONFIG.inference.inputSize
+      path.join(__dirname, '../models/labels.txt'),
+      {
+        confidenceThreshold: CONFIG.inference.confidenceThreshold,
+        nmsThreshold: CONFIG.inference.nmsThreshold,
+      }
     );
     this.embeddingModel = new EmbeddingModel(CONFIG.models.embedding);
     this.knnClassifier = new KNNClassifier(this.embeddingModel, this.database);
@@ -70,11 +73,19 @@ class InferenceWorker {
       console.log('Database initialized');
       
       // Initialize models
-      await this.detector.initialize();
-      console.log('Object detector initialized');
+      if (fs.existsSync(CONFIG.models.detector)) {
+        await this.detector.initialize();
+        console.log('Object detector initialized');
+      } else {
+        console.warn('Detector model not found, skipping initialization');
+      }
       
-      await this.embeddingModel.initialize();
-      console.log('Embedding model initialized');
+      if (fs.existsSync(CONFIG.models.embedding)) {
+        await this.embeddingModel.initialize();
+        console.log('Embedding model initialized');
+      } else {
+        console.warn('Embedding model not found, skipping initialization');
+      }
       
       // Initialize processor
       await this.processor.initialize();
@@ -86,12 +97,12 @@ class InferenceWorker {
       console.log('MQTT connected');
       
       // Subscribe to frame topics
-      await this.subscriber.subscribe('camera/+/frame', (topic, message) => {
+      await this.subscriber.subscribe('camera/+/frame', (topic: string, message: Buffer) => {
         this.handleFrameMessage(topic, message);
       });
       
       // Subscribe to configuration updates
-      await this.subscriber.subscribe('config/+/update', (topic, message) => {
+      await this.subscriber.subscribe('config/+/update', (topic: string, message: Buffer) => {
         this.handleConfigUpdate(topic, message);
       });
       

@@ -1,6 +1,6 @@
 import { Database } from './database';
 import { ActionExecutor, ActionRequest } from './action-executor';
-import { MQTTPublisher, MQTTSubscriber } from '@security-system/shared/mqtt';
+import { MQTTPublisher, MQTTSubscriber } from '@security-system/shared';
 import * as path from 'path';
 
 // Configuration

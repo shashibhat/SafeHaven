@@ -7,7 +7,7 @@ import {
   ExclamationTriangleIcon,
   VideoCameraIcon,
   UserIcon,
-  PackageIcon,
+  ArchiveBoxIcon,
   FaceSmileIcon,
   HandRaisedIcon
 } from '@heroicons/react/24/outline';
@@ -47,7 +47,7 @@ export const Events: React.FC = () => {
     switch (type) {
       case 'person_detected': return <UserIcon className="h-5 w-5" />;
       case 'motion_detected': return <HandRaisedIcon className="h-5 w-5" />;
-      case 'package_detected': return <PackageIcon className="h-5 w-5" />;
+      case 'package_detected': return <ArchiveBoxIcon className="h-5 w-5" />;
       case 'face_recognized': return <FaceSmileIcon className="h-5 w-5" />;
       case 'zone_violation': return <ExclamationTriangleIcon className="h-5 w-5" />;
       default: return <VideoCameraIcon className="h-5 w-5" />;
@@ -408,3 +408,5 @@ export const Events: React.FC = () => {
     </div>
   );
 };
+
+export default Events;

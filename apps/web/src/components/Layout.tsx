@@ -83,11 +83,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-security-600 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium">
-                  {user?.username.charAt(0).toUpperCase()}
+                  {(user?.email?.charAt(0) || '?').toUpperCase()}
                 </span>
               </div>
               <div className="text-sm">
-                <p className="font-medium text-white">{user?.username}</p>
+                <p className="font-medium text-white">{user?.email}</p>
                 <p className="text-security-400 capitalize">{user?.role}</p>
               </div>
             </div>

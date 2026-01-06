@@ -12,18 +12,37 @@ export class Database {
   }
 
   async initialize(): Promise<void> {
-    const migrationsPath = path.join(__dirname, '../../migrations');
+    const migrationsPath = path.resolve(__dirname, '../../../migrations');
     const migrationFiles = await fs.readdir(migrationsPath);
-    
+
+    await this.exec(
+      'CREATE TABLE IF NOT EXISTS __migrations (name TEXT PRIMARY KEY, applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)'
+    );
+
     // Sort migration files by name
     migrationFiles.sort();
-    
+
     for (const file of migrationFiles) {
-      if (file.endsWith('.sql')) {
-        const sql = await fs.readFile(path.join(migrationsPath, file), 'utf-8');
-        await this.exec(sql);
-        console.log(`Applied migration: ${file}`);
+      if (!file.endsWith('.sql')) continue;
+
+      const applied = await this.get<{ name: string }>(
+        'SELECT name FROM __migrations WHERE name = ? LIMIT 1',
+        [file]
+      );
+      if (applied) {
+        continue;
       }
+
+      let sql = await fs.readFile(path.join(migrationsPath, file), 'utf-8');
+      // Make migration idempotent
+      sql = sql
+        .replace(/CREATE TABLE\s+/gi, 'CREATE TABLE IF NOT EXISTS ')
+        .replace(/CREATE INDEX\s+/gi, 'CREATE INDEX IF NOT EXISTS ')
+        .replace(/INSERT INTO\s+/gi, 'INSERT OR IGNORE INTO ');
+
+      await this.exec(sql);
+      await this.run('INSERT INTO __migrations (name) VALUES (?)', [file]);
+      console.log(`Applied migration: ${file}`);
     }
   }
 
@@ -77,7 +96,12 @@ let dbInstance: Database | null = null;
 
 export const getDatabase = (): Database => {
   if (!dbInstance) {
-    const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../data/security.db');
+    const defaultPath = path.resolve(__dirname, '../../../data/security.db');
+    const dbPath = process.env.DATABASE_PATH || defaultPath;
+    const dir = path.dirname(dbPath);
+    try {
+      require('fs').mkdirSync(dir, { recursive: true });
+    } catch {}
     dbInstance = new Database(dbPath);
   }
   return dbInstance;

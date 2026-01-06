@@ -316,3 +316,5 @@ export const Cameras: React.FC = () => {
     </div>
   );
 };
+
+export default Cameras;

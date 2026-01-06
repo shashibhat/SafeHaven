@@ -531,3 +531,5 @@ export const CustomModels: React.FC = () => {
     </div>
   );
 };
+
+export default CustomModels;

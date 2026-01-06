@@ -1,6 +1,5 @@
 import { Database } from './database';
-import { MQTTPublisher } from '@security-system/shared/mqtt';
-import { EventSeverity } from '@security-system/shared/types';
+import { MQTTPublisher } from '@security-system/shared';
 import * as notifier from 'node-notifier';
 import fetch from 'node-fetch';
 import * as fs from 'fs';

@@ -35,21 +35,24 @@ export class ObjectDetector {
       this.session = await InferenceSession.create(this.modelPath);
       
       // Load labels
-      const labelsData = await fs.readFile(this.labelsPath, 'utf-8');
-      this.labels = labelsData.split('\n').map(label => label.trim()).filter(label => label);
-      
-      // Get input shape from model
-      const inputTensor = this.session.inputNames[0];
-      const inputMetadata = this.session.inputMetadata.get(inputTensor);
-      if (inputMetadata && inputMetadata.dims) {
-        this.inputShape = inputMetadata.dims as [number, number, number, number];
+      try {
+        const labelsData = await fs.readFile(this.labelsPath, 'utf-8');
+        this.labels = labelsData.split('\n').map(label => label.trim()).filter(label => label);
+      } catch {
+        this.labels = [];
       }
+      
+      // Use default input shape unless model introspection is available
       
       console.log(`Object detector initialized with ${this.labels.length} classes`);
     } catch (error) {
       console.error('Failed to initialize object detector:', error);
       throw error;
     }
+  }
+
+  isInitialized(): boolean {
+    return !!this.session;
   }
 
   async detect(imageBuffer: Buffer): Promise<Detection[]> {

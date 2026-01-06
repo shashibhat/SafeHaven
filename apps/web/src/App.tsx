@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/auth'
 import { useSystemStore } from './stores/system'
-import { initializeMQTT } from './services/mqtt'
+// MQTT initializer is provided via system store
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -13,8 +13,12 @@ import CustomModels from './pages/CustomModels'
 import Settings from './pages/Settings'
 
 function App() {
-  const { user, loading } = useAuthStore()
+  const { user, loading, checkAuth } = useAuthStore()
   const { initializeMQTT } = useSystemStore()
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
 
   useEffect(() => {
     if (user && !loading) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../stores/auth';
 import { useSystemStore } from '../stores/system';
-import { Camera, Event, SystemStatus } from '@security-system/shared';
+// Using store-provided shapes for UI
 import { 
   VideoCameraIcon, 
   ExclamationTriangleIcon, 
@@ -23,9 +23,9 @@ export const Dashboard: React.FC = () => {
     fetchSystemStatus();
   }, [fetchCameras, fetchEvents, fetchSystemStatus]);
 
-  const activeCameras = cameras.filter(cam => cam.status === 'online');
-  const recentEvents = events.slice(0, 10);
-  const criticalEvents = events.filter(e => e.severity === 'high').slice(0, 5);
+  const activeCameras = (cameras as any[]).filter(cam => (cam as any).status === 'online');
+  const recentEvents = (events as any[]).slice(0, 10);
+  const criticalEvents = (events as any[]).filter((e: any) => e.severity === 'high').slice(0, 5);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -51,7 +51,7 @@ export const Dashboard: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Security Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.username}</p>
+          <p className="text-gray-600">Welcome back, {user?.email}</p>
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -93,7 +93,7 @@ export const Dashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Critical Events</p>
               <p className="text-2xl font-bold text-gray-900">
-                {events.filter(e => e.severity === 'high' && 
+                {(events as any[]).filter((e: any) => e.severity === 'high' && 
                   new Date(e.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000)
                 ).length}
               </p>
@@ -107,7 +107,7 @@ export const Dashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Today</p>
               <p className="text-2xl font-bold text-gray-900">
-                {events.filter(e => 
+                {(events as any[]).filter((e: any) => 
                   new Date(e.timestamp).toDateString() === new Date().toDateString()
                 ).length}
               </p>
@@ -163,7 +163,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {recentEvents.map((event) => (
+              {(recentEvents as any[]).map((event: any) => (
                 <div key={event.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${
                     event.severity === 'high' ? 'bg-red-500' :
@@ -223,3 +223,5 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
+
+export default Dashboard;

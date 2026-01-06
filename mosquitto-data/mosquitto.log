@@ -1,0 +1,44 @@
+1767681602: mosquitto version 2.0.22 starting
+1767681602: Config loaded from configs/mosquitto-local.conf.
+1767681602: Opening ipv6 listen socket on port 1883.
+1767681602: Opening ipv4 listen socket on port 1883.
+1767681602: Opening websockets listen socket on port 9001.
+1767681602: Error: Unable to create websockets listener on port 9001.
+1767682363: mosquitto version 2.0.22 starting
+1767682363: Config loaded from configs/mosquitto-local.conf.
+1767682363: Opening ipv6 listen socket on port 1883.
+1767682363: Opening ipv4 listen socket on port 1883.
+1767682363: Opening websockets listen socket on port 9001.
+1767682363: Error: Unable to create websockets listener on port 9001.
+1767684314: mosquitto version 2.0.22 starting
+1767684314: Config loaded from configs/mosquitto-local.conf.
+1767684314: Opening ipv6 listen socket on port 1883.
+1767684314: Opening ipv4 listen socket on port 1883.
+1767684314: Opening websockets listen socket on port 9001.
+1767684314: Error: Unable to create websockets listener on port 9001.
+1767684326: mosquitto version 2.0.22 starting
+1767684326: Config loaded from configs/mosquitto-local.conf.
+1767684326: Opening ipv6 listen socket on port 1883.
+1767684326: Opening ipv4 listen socket on port 1883.
+1767684326: Opening websockets listen socket on port 9001.
+1767684326: Error: Unable to create websockets listener on port 9001.
+1767684354: mosquitto version 2.0.22 starting
+1767684354: Config loaded from configs/mosquitto-local.conf.
+1767684354: Opening websockets listen socket on port 9001.
+1767684354: Error: Unable to create websockets listener on port 9001.
+1767684379: mosquitto version 2.0.22 starting
+1767684379: Config loaded from configs/mosquitto-local.conf.
+1767684379: Opening websockets listen socket on port 9011.
+1767684379: Error: Unable to start any listening sockets, exiting.
+1767684600: mosquitto version 2.0.22 starting
+1767684600: Config loaded from configs/mosquitto-local.conf.
+1767684600: Opening websockets listen socket on port 9011.
+1767684600: Error: Unable to start any listening sockets, exiting.
+1767684681: mosquitto version 2.0.22 starting
+1767684681: Config loaded from configs/mosquitto-local.conf.
+1767684681: Opening websockets listen socket on port 9011.
+1767684681: Error: Unable to start any listening sockets, exiting.
+1767684776: mosquitto version 2.0.22 starting
+1767684776: Config loaded from /Users/bytedance/personal/hackathon/security-system/SafeHaven/configs/mosquitto-local.conf.
+1767684776: Opening websockets listen socket on port 9011.
+1767684776: Error: Unable to start any listening sockets, exiting.

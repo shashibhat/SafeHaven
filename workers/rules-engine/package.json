@@ -10,7 +10,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@security-system/shared": "workspace:*",
+    "@security-system/shared": "file:../../packages/shared",
     "mqtt": "^5.3.4",
     "sqlite3": "^5.1.6",
     "date-fns": "^3.6.0"

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { Camera, DetectionEvent, Event, Rule, CustomModel, Incident } from '@security-system/shared/types'
+import { Camera, DetectionPayload as DetectionEvent, Event, Rule, CustomModelConfig as CustomModel, Incident } from '@security-system/shared'
 import { getMQTTService } from '../services/mqtt'
+import { useAuthStore } from './auth'
 
 interface SystemState {
   cameras: Camera[]
@@ -14,6 +15,7 @@ interface SystemState {
     online: number
     offline: number
     alerts: number
+    status?: string
   }
   isConnected: boolean
   lastUpdate: Date | null
@@ -35,6 +37,9 @@ interface SystemState {
   updateCamera: (cameraId: string, updates: Partial<Camera>) => void
   updateCameraStatus: (cameraId: string, status: 'online' | 'offline') => void
   initializeMQTT: () => Promise<void>
+  fetchCameras: () => Promise<void>
+  fetchEvents: () => Promise<void>
+  fetchSystemStatus: () => Promise<void>
 }
 
 export const useSystemStore = create<SystemState>((set, get) => ({
@@ -49,6 +54,7 @@ export const useSystemStore = create<SystemState>((set, get) => ({
     online: 0,
     offline: 0,
     alerts: 0,
+    status: 'unknown',
   },
   isConnected: false,
   lastUpdate: null,
@@ -88,19 +94,18 @@ export const useSystemStore = create<SystemState>((set, get) => ({
     lastUpdate: new Date()
   })),
   
-  updateCameraStatus: (cameraId, status) => set((state) => ({
-    cameras: state.cameras.map(camera => 
-      camera.id === cameraId 
-        ? { ...camera, status }
-        : camera
-    ),
-    systemStatus: {
-      ...state.systemStatus,
-      online: state.cameras.filter(c => c.status === 'online' || (c.id === cameraId && status === 'online')).length,
-      offline: state.cameras.filter(c => c.status === 'offline' || (c.id === cameraId && status === 'offline')).length,
-    },
-    lastUpdate: new Date()
-  })),
+  updateCameraStatus: (cameraId, status) => set((state) => {
+    const updated = state.cameras.map((camera) =>
+      camera.id === cameraId ? ({ ...(camera as any), status }) : camera
+    ) as any[];
+    const online = updated.filter((c) => (c as any).status === 'online').length;
+    const offline = updated.filter((c) => (c as any).status === 'offline').length;
+    return {
+      cameras: updated as any,
+      systemStatus: { ...state.systemStatus, online, offline },
+      lastUpdate: new Date(),
+    };
+  }),
 
   initializeMQTT: async () => {
     try {
@@ -177,8 +182,72 @@ export const useSystemStore = create<SystemState>((set, get) => ({
       });
 
       console.log('MQTT listeners set up successfully');
+
+      await mqtt.connect();
+      console.log('MQTT connection established');
     } catch (error) {
       console.error('Failed to initialize MQTT in store:', error);
+    }
+  },
+
+  fetchCameras: async () => {
+    try {
+      const token = useAuthStore.getState().token
+      const res = await fetch('/api/cameras', {
+        headers: { Authorization: `Bearer ${token || ''}` },
+      })
+      if (!res.ok) throw new Error('Failed to fetch cameras')
+      const apiCameras: any[] = await res.json()
+      const mapped: any[] = apiCameras.map((c) => ({
+        ...c,
+        status: c.enabled ? 'online' : 'offline',
+      }))
+      set({ cameras: mapped as any, lastUpdate: new Date() })
+    } catch (e) {
+      console.error('fetchCameras error', e)
+    }
+  },
+
+  fetchEvents: async () => {
+    try {
+      const token = useAuthStore.getState().token
+      const res = await fetch('/api/events?limit=100', {
+        headers: { Authorization: `Bearer ${token || ''}` },
+      })
+      if (!res.ok) throw new Error('Failed to fetch events')
+      const apiEvents: any[] = await res.json()
+      const mapSeverity = (s: string) => (s === 'critical' ? 'high' : s === 'warn' ? 'medium' : 'low')
+      const mapped: any[] = apiEvents.map((e) => ({
+        id: e.id,
+        type: e.event_type,
+        severity: mapSeverity(e.severity),
+        cameraName: e.camera_name,
+        timestamp: e.ts,
+        payload_json: e.payload_json,
+      }))
+      set({ events: mapped as any, lastUpdate: new Date() })
+    } catch (e) {
+      console.error('fetchEvents error', e)
+    }
+  },
+
+  fetchSystemStatus: async () => {
+    try {
+      const res = await fetch('/health')
+      const health = (await res.json()) as { status: string }
+      const state = get()
+      set({
+        systemStatus: {
+          cameras: state.cameras.length,
+          online: state.cameras.filter((c: any) => c.status === 'online').length,
+          offline: state.cameras.filter((c: any) => c.status === 'offline').length,
+          alerts: state.events.filter((e: any) => e.severity === 'high').length,
+          status: health.status,
+        },
+        lastUpdate: new Date(),
+      })
+    } catch (e) {
+      console.error('fetchSystemStatus error', e)
     }
   },
 }))

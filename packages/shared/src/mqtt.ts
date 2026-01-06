@@ -1,4 +1,4 @@
-import { MqttClient } from 'mqtt';
+import { MqttClient, connect } from 'mqtt';
 import { 
   DetectionPayload, 
   IncidentPayload, 
@@ -152,5 +152,99 @@ export class MqttSubscriber {
       default:
         throw new Error(`Unknown detection type: ${type}`);
     }
+  }
+}
+
+export class MQTTPublisher {
+  private client: MqttClient | null = null;
+  constructor(private config: { host: string; port: number; username?: string; password?: string }) {}
+
+  async connect(): Promise<void> {
+    this.client = connect(`mqtt://${this.config.host}:${this.config.port}`, {
+      username: this.config.username,
+      password: this.config.password,
+      protocolVersion: 5,
+    });
+    await new Promise<void>((resolve, reject) => {
+      if (!this.client) return reject(new Error('Client not initialized'));
+      this.client.once('connect', () => resolve());
+      this.client.once('error', (e) => reject(e));
+    });
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.client) this.client.end(true);
+    this.client = null;
+  }
+
+  async publishStatus(service: string, status: 'online' | 'offline', details?: Record<string, any>): Promise<void> {
+    if (!this.client) return;
+    const payload = {
+      service,
+      status: status === 'online' ? 'healthy' : 'unhealthy',
+      timestamp: new Date(),
+      details,
+    };
+    this.client.publish(MQTT_TOPICS.HEALTH_SERVICE(service), JSON.stringify(payload), { qos: 1, retain: true });
+  }
+
+  publishDetectionEvent(cameraId: string, event: Record<string, any>): void {
+    if (!this.client) return;
+    this.client.publish('security/events/new', JSON.stringify({ cameraId, ...event }), { qos: 1 });
+  }
+
+  publishMotionEvent(cameraId: string, event: Record<string, any>): void {
+    if (!this.client) return;
+    this.client.publish('security/events/new', JSON.stringify({ cameraId, ...event }), { qos: 1 });
+  }
+
+  publishActionResult(actionId: string, result: Record<string, any>): void {
+    if (!this.client) return;
+    this.client.publish('security/alerts/notification', JSON.stringify({ actionId, ...result }), { qos: 1 });
+  }
+
+  publishRecordingStarted(recordingId: string, cameraId: string, duration: number): void {
+    if (!this.client) return;
+    this.client.publish('security/cameras/status', JSON.stringify({ recordingId, cameraId, state: 'started', duration }), { qos: 1 });
+  }
+
+  publishRecordingStopped(recordingId: string): void {
+    if (!this.client) return;
+    this.client.publish('security/cameras/status', JSON.stringify({ recordingId, state: 'stopped' }), { qos: 1 });
+  }
+}
+
+export class MQTTSubscriber {
+  private client: MqttClient | null = null;
+  constructor(private config: { host: string; port: number; username?: string; password?: string }) {}
+
+  async connect(): Promise<void> {
+    this.client = connect(`mqtt://${this.config.host}:${this.config.port}`, {
+      username: this.config.username,
+      password: this.config.password,
+      protocolVersion: 5,
+    });
+    await new Promise<void>((resolve, reject) => {
+      if (!this.client) return reject(new Error('Client not initialized'));
+      this.client.once('connect', () => resolve());
+      this.client.once('error', (e) => reject(e));
+    });
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.client) this.client.end(true);
+    this.client = null;
+  }
+
+  async subscribe(topic: string, handler: (topic: string, message: Buffer) => void): Promise<void> {
+    if (!this.client) return;
+    await new Promise<void>((resolve, reject) => {
+      this.client!.subscribe(topic, { qos: 1 }, (err) => (err ? reject(err) : resolve()));
+    });
+    this.client.on('message', (t, m) => {
+      if (!topic || t.match(new RegExp('^' + topic.replace('+', '[^/]+').replace('#', '.*') + '$'))) {
+        handler(t, m);
+      }
+    });
   }
 }

@@ -85,7 +85,7 @@ class CameraIngestWorker {
       console.log('Discovering cameras...');
       const db = getDatabase();
       
-      const cameras = await db.all<Camera[]>(
+      const cameras = await db.all<Camera>(
         'SELECT * FROM cameras WHERE enabled = 1 ORDER BY created_at DESC'
       );
       
